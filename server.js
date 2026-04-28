@@ -182,3 +182,7 @@ mongoose
 process.on("uncaughtException", (err) => {
   console.log("ERREUR:", err.message);
 });
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`Server running on port ${process.env.PORT || 3000}`);
+});
