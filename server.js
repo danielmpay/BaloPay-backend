@@ -2,8 +2,8 @@ if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
-console.log("MONGO_URI exists:", !!process.env.MONGO_URI);
-console.log("NODE_ENV:", process.env.NODE_ENV);
+// console.log("MONGO_URI exists:", !process.env.MONGO_URI);
+// console.log("NODE_ENV:", process.env.NODE_ENV);
 
 const express = require("express");
 const jwt = require("jsonwebtoken");
@@ -20,9 +20,21 @@ const FeePolicy = require("./feePolicy");
 
 const SECRET = process.env.SECRET;
 const app = express();
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST,PUT, DELETE, OPTIONS"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json());
-app.use(cors());
 
 //INIT
 const ledger = new Ledger();
@@ -59,15 +71,25 @@ function verifyToken(req, res, next) {
 // USER ROUTE
 app.post("/register", async (req, res) => {
   try {
-    const { username, password, accountId } = req.body;
-
+    const { username, password, name, mobile, country, email } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    //AccountId nes plus dans le req.body
+
+    const accountId = crypto.randomUUID(); //genere par le serveur
     const user = await User.create({
       username,
       password: hashedPassword,
-      accountId
+      accountId,
+      name,
+      mobile,
+      country,
+      email
     });
+
+    // AJOUTER DANS ACCOUNTREGISTER;
+    accountRegister.addAccount(accountId, username, "active");
+
     res.json({ message: "User created", userId: user.username });
   } catch (e) {
     res.status(400).json({ error: e.message });
@@ -179,7 +201,7 @@ mongoose
   .then(async () => {
     console.log("Mongo Connected");
     await ledger.loadFromDB();
-    app.listen(3000, () => {
+    app.listen(process.env.PORT || 3000, () => {
       console.log("Server running on port 3000 ");
     });
   })
@@ -187,8 +209,4 @@ mongoose
 
 process.on("uncaughtException", (err) => {
   console.log("ERREUR:", err.message);
-});
-
-app.listen(process.env.PORT || 3000, () => {
-  console.log(`Server running on port ${process.env.PORT || 3000}`);
 });
