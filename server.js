@@ -2,8 +2,6 @@ if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
-// console.log("MONGO_URI exists:", !process.env.MONGO_URI);
-// console.log("NODE_ENV:", process.env.NODE_ENV);
 const crypto = require("crypto");
 const express = require("express");
 const jwt = require("jsonwebtoken");
@@ -21,20 +19,7 @@ const SECRET = process.env.SECRET;
 const app = express();
 
 const cors = require("cors");
-
-app.use(
-  cors({
-    origin: ["http://127.0.0.1:5500", "http://localhost:8000"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-  })
-);
-
-app.use(
-  cors({
-    origin: true
-  })
-);
+app.use(cors());
 app.use(express.json());
 
 //INIT
@@ -202,12 +187,14 @@ mongoose
   .then(async () => {
     console.log("Mongo Connected");
     await ledger.loadFromDB();
-    app.listen(process.env.PORT || 3000, () => {
-      console.log("Server running on port 3000 ");
-    });
   })
   .catch((err) => console.log("Erreur MongoDB", err.message));
 
 process.on("uncaughtException", (err) => {
   console.log("ERREUR:", err.message);
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`server running on port ${PORT}`);
 });
