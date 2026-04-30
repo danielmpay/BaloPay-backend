@@ -20,16 +20,17 @@ const FeePolicy = require("./feePolicy");
 
 const SECRET = process.env.SECRET;
 const app = express();
+
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST,PUT, DELETE, OPTIONS"
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Access, Authorization"
   );
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
 
   if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
+    return res.sendStatus(200).end();
   }
   next();
 });
