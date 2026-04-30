@@ -182,19 +182,17 @@ app.get("/transactions/:accountId", async (req, res) => {
   }
 });
 
+const PORT = process.env.PORT || 3000;
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(async () => {
-    console.log("Mongo Connected");
+    console.log("MongoDb Connected");
+
     await ledger.loadFromDB();
+
+    app.listen(PORT, () => {
+      console.log(`server running on port ${PORT}`);
+    });
   })
   .catch((err) => console.log("Erreur MongoDB", err.message));
-
-process.on("uncaughtException", (err) => {
-  console.log("ERREUR:", err.message);
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`server running on port ${PORT}`);
-});
