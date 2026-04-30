@@ -189,10 +189,10 @@ mongoose
   .then(async () => {
     console.log("MongoDb Connected");
 
-    await ledger.loadFromDB();
-
     app.listen(PORT, () => {
       console.log(`server running on port ${PORT}`);
     });
+
+    await ledger.loadFromDB();
   })
   .catch((err) => console.log("Erreur MongoDB", err.message));
