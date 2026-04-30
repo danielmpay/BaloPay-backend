@@ -30,7 +30,7 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
 
   if (req.method === "OPTIONS") {
-    return res.sendStatus(200).end();
+    return res.status(200).end();
   }
   next();
 });
