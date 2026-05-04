@@ -317,7 +317,7 @@ app.post("/transfer", verifyToken, async (req, res) => {
     }
 
     // GET RECEIVER ACCOUNTID
-    const receiverAccountId = req.body.accountId;
+    const receiverAccountId = req.body.toAccountId;
 
     // GET RECEIVER ACCOUNT
     const receivedAccount = accountRegister.getAccount(receiverAccountId);
