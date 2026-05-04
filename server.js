@@ -116,7 +116,8 @@ app.post("/register", async (req, res) => {
     //RESPONSE
     res.json({
       message: "User created",
-      token
+      token,
+      accountId: user.accountId
     });
   } catch (e) {
     res.status(400).json({ error: e.message });
@@ -417,7 +418,7 @@ app.get("/balance/:id", verifyToken, async (req, res) => {
 });
 
 // TRANSACTION ROUTE
-app.get("/transaction/:id", verifyToken, async (req, res) => {
+app.get("/transactions/:id", verifyToken, async (req, res) => {
   try {
     // GET USER ID;
     const userId = req.user.userId;
