@@ -118,9 +118,10 @@ class TransactionBuilder {
     }
 
     //GET AND VALIDATE SENDER
-    const sender = this.accountRegister.validateActiveAccount(
-      this.accountRegister.getAccount(fromAccountId)
-    );
+    const sender = this.accountRegister.getAccount(fromAccountId);
+    if (!this.accountRegister.isActive(sender)) {
+      throw new Error("sender account not active");
+    }
 
     //GET SENDER OWNERSHIP
     if (sender.ownerId !== userId) {
@@ -128,9 +129,10 @@ class TransactionBuilder {
     }
 
     //GET AND VALIDATE RECEIVER
-    const receiver = this.accountRegister.validateActiveAccount(
-      this.accountRegister.getAccount(toAccountId)
-    );
+    const receiver = this.accountRegister.getAccount(toAccountId);
+    if (!this.accountRegister.isActive(receiver)) {
+      throw new Error("receiver account not active");
+    }
 
     //GET BALANCE
     const currentAmount = this.ledger.getBalance(fromAccountId);
