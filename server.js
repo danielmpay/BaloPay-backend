@@ -167,7 +167,8 @@ app.post("/login", loginLimiter, async (req, res) => {
     //RESPONSE
     res.json({
       message: "Login Successful",
-      token
+      token,
+      accountId: existingUser.accountId
     });
   } catch (err) {
     res.status(500).send("Server Error");
