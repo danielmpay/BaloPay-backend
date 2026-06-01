@@ -1,101 +1,90 @@
+const User = require("./userModel");
+
 class TransactionBuilder {
-  constructor(ledger, accountRegister, bankAccountId, feePolicy) {
-    if (!ledger) throw new Error("Invalid ledger");
-    if (!accountRegister) throw new Error("Invalid Account");
-    if (!bankAccountId) throw new Error("Invalid bankAccountId");
-    if (!feePolicy) throw new Error("Invalid fee");
+  constructor(ledger, bankAccountId, feePolicy) {
+    if (!ledger) throw new Error("Invalid Ledger");
+    if (!bankAccountId) throw new Error("bankAccountId");
+    if (!feePolicy) throw new Error("Invalid feePolicy");
 
     this.ledger = ledger;
-    this.accountRegister = accountRegister;
     this.bankAccountId = bankAccountId;
     this.feePolicy = feePolicy;
   }
 
-  // Method
-  // DEPOSIT
   async deposit(userId, accountId, amount) {
-    if (!accountId || typeof accountId !== "string") {
-      throw new Error("invalid Id");
+    // - VALIDATION
+    if (!userId || typeof userId !== "string") throw new Error("Invalid user");
+
+    if (!accountId || typeof accountId !== "string")
+      throw new Error("Invalid user");
+
+    if (typeof amount !== "number" || isNaN(amount) || !isFinite(amount))
+      throw new Error("Invalid amount");
+
+    if (amount < 0) throw new Error("Deposit amount must be greater than zero");
+
+    // A.  CHECH IF ACCOUNT EXIT
+    const user = await User.findOne({ accountId });
+    if (!user) throw new Error("Invalid account");
+
+    // B. CHECK IF ACCOUNT IS ACTIVE
+    if (user.status !== "active") throw new Error("Account not active");
+
+    // C. CHECK ACCOUNT OWNERSHIP
+    if (user.username !== userId) {
+      throw new Error("Not Owner");
     }
 
-    if (!userId || typeof userId !== "string") {
-      throw new Error("Invalid User");
-    }
+    const depositTrxId = crypto.randomUUID();
 
-    if (typeof amount !== "number" || isNaN(amount) || !isFinite(amount)) {
-      throw new Error("invalid amount");
-    }
-
-    if (amount <= 0) {
-      throw new Error("Amount must be greater than zero");
-    }
-
-    // CHECKING IF ACCOUNT EXIST / OWNERSHIP AND ACTIVE
-    let currentAccount = this.accountRegister.getAccount(accountId);
-
-    if (!currentAccount) throw new Error("Invalid account");
-    if (currentAccount.ownerId !== userId) throw new Error("Invalid owner");
-    if (currentAccount.status !== "active") throw new Error("Invalid Status");
-
-    const transactionID = crypto.randomUUID();
-
-    const entries = [
+    const depositEntries = [
       { accountId: accountId, amount: amount },
       { accountId: this.bankAccountId, amount: -amount }
     ];
 
-    return await this.ledger.recordTransaction(transactionID, entries);
+    return this.ledger.recordTransaction(depositTrxId, depositEntries);
   }
 
-  // WITHDRAW
   async withdraw(userId, accountId, amount) {
-    if (!userId || typeof userId !== "string") {
+    // - VALIDATION
+    if (!userId || typeof userId !== "string") throw new Error("Invalid user");
+
+    if (!accountId || typeof accountId !== "string")
       throw new Error("Invalid user");
-    }
 
-    if (!accountId || typeof accountId !== "string") {
-      throw new Error("Invalid accounnt Id");
-    }
-
-    if (typeof amount !== "number" || isNaN(amount) || !isFinite(amount)) {
+    if (typeof amount !== "number" || isNaN(amount) || !isFinite(amount))
       throw new Error("Invalid amount");
+
+    if (amount < 0)
+      throw new Error("Withdraw amount must be greater than zero");
+
+    // A. CHECK IF WITHDRAWAL ACCOUNT EXIT
+    let user = await User.findOne({ accountId });
+    if (!user) throw new Error("Invalid account");
+
+    // B. CHECK IF IS ACTIVE
+    if (user.status !== "active") throw new Error("Accout not active");
+
+    // C. CHECK ACCOUNT OWNERSHIP
+    if (user.username !== userId) {
+      throw new Error("Not  Owner");
     }
 
-    if (amount <= 0) {
-      throw new Error("Amount should be greater than 0");
-    }
-
-    let currentAccount = this.accountRegister.getAccount(accountId);
-
-    if (!currentAccount) {
-      throw new Error("Invalid account");
-    }
-
-    if (currentAccount.ownerId !== userId) {
-      throw new Error("Invalid user");
-    }
-
-    if (currentAccount.status !== "active") {
-      throw new Error("Account not active");
-    }
-
+    // D. CHECK IF ENOUGH AMOUNT
     let currentAmount = this.ledger.getBalance(accountId);
+    if (currentAmount < amount) throw new Error("Insufficient funds");
 
-    if (amount > currentAmount) throw new Error("Insufficient Funds");
+    const withdrawalId = crypto.randomUUID();
 
-    const transactionId = crypto.randomUUID();
-
-    const entries = [
+    const withdrawEntries = [
       { accountId: accountId, amount: -amount },
       { accountId: this.bankAccountId, amount: amount }
     ];
 
-    return await this.ledger.recordTransaction(transactionId, entries);
+    return this.ledger.recordTransaction(withdrawalId, withdrawEntries);
   }
 
-  // TRANSFER
   async transfer(userId, fromAccountId, toAccountId, amount) {
-    // VALIDATE INPUTS
     if (!userId || typeof userId !== "string") {
       throw new Error("Invalid userId");
     }
@@ -109,40 +98,40 @@ class TransactionBuilder {
       throw new Error("Invalid number");
     }
     if (amount <= 0) {
-      throw new Error("Amount should be greater than zero");
+      throw new Error("Transfer should be greater than zero");
     }
 
-    //AGAIN SELF TRANSFERT
-    if (fromAccountId === toAccountId) {
-      throw new Error("You cannot send to same account");
+    // AGAIN SELF TRANSFER
+    if (fromAccountId === toAccountId)
+      throw new Error("You cannot send to yourself");
+
+    // VALIDATE SENDER
+    const sender = await User.findOne({ accountId: fromAccountId });
+    if (!sender) {
+      throw new Error("Invalid sender");
     }
 
-    //GET AND VALIDATE SENDER
-    const sender = this.accountRegister.getAccount(fromAccountId);
-    if (!this.accountRegister.isActive(sender)) {
-      throw new Error("sender account not active");
+    if (sender.username !== userId) throw new Error("Not owner");
+
+    // VALIDATE RECEIVER
+    const receiver = await User.findOne({ accountId: toAccountId });
+    if (!receiver) {
+      throw new Error("Invalid receiver");
     }
 
-    //GET SENDER OWNERSHIP
-    if (sender.ownerId !== userId) {
-      throw new Error("Not owner of account");
+    if (receiver.status !== "active") {
+      throw new Error("Receiver Account not active");
     }
 
-    //GET AND VALIDATE RECEIVER
-    const receiver = this.accountRegister.getAccount(toAccountId);
-    if (!this.accountRegister.isActive(receiver)) {
-      throw new Error("receiver account not active");
-    }
-
-    //GET BALANCE
+    // GET BALANCE
     const currentAmount = this.ledger.getBalance(fromAccountId);
 
     // CALCULATE FEE
     const totalFee = this.feePolicy.calculate(amount);
 
-    //CHECK FUNDS
-    if (amount + totalFee > currentAmount) {
-      throw new Error("Insufficient Funds");
+    // CHECK FUNDS
+    if (currentAmount < amount + totalFee) {
+      throw new Error("Insufficient funds");
     }
 
     const transferId = crypto.randomUUID();
@@ -153,7 +142,7 @@ class TransactionBuilder {
       { accountId: this.bankAccountId, amount: totalFee }
     ];
 
-    return await this.ledger.recordTransaction(transferId, transferEntries);
+    return this.ledger.recordTransaction(transferId, transferEntries);
   }
 }
 
