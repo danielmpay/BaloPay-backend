@@ -308,7 +308,9 @@ app.post("/webhooks/flutterwave", async (req, res) => {
   res.status(200).json({ received: true });
 
   // 2. verifier la signature
+  console.log("WEBHOOK BODY:", JSON.stringify(req.body));
   const signature = req.headers["verif-hash"];
+  console.log("WEBHOOK HEADERS:", req.headers["verif-hash"]);
   const webhookSecret = process.env.FLUTTERWAVE_WEBHOOK_SECRET;
 
   if (!signature || signature !== webhookSecret) {
