@@ -1,3 +1,5 @@
+const TRANSACTION_TYPES = require("./constants/transactionsTypes");
+const crypto = require("crypto");
 const User = require("./userModel");
 
 class TransactionBuilder {
@@ -42,7 +44,11 @@ class TransactionBuilder {
       { accountId: this.bankAccountId, amount: -amount }
     ];
 
-    return this.ledger.recordTransaction(depositTrxId, depositEntries);
+    return this.ledger.recordTransaction(
+      depositTrxId,
+      TRANSACTION_TYPES.DEPOSIT,
+      depositEntries
+    );
   }
 
   async withdraw(userId, accountId, amount) {
@@ -75,13 +81,16 @@ class TransactionBuilder {
     if (currentAmount < amount) throw new Error("Insufficient funds");
 
     const withdrawalId = crypto.randomUUID();
-
     const withdrawEntries = [
       { accountId: accountId, amount: -amount },
       { accountId: this.bankAccountId, amount: amount }
     ];
 
-    return this.ledger.recordTransaction(withdrawalId, withdrawEntries);
+    return this.ledger.recordTransaction(
+      withdrawalId,
+      TRANSACTION_TYPES.WITHDRAW,
+      withdrawEntries
+    );
   }
 
   async transfer(userId, fromAccountId, toAccountId, amount) {
@@ -135,14 +144,17 @@ class TransactionBuilder {
     }
 
     const transferId = crypto.randomUUID();
-
     const transferEntries = [
       { accountId: fromAccountId, amount: -(amount + totalFee) },
       { accountId: toAccountId, amount: amount },
       { accountId: this.bankAccountId, amount: totalFee }
     ];
 
-    return this.ledger.recordTransaction(transferId, transferEntries);
+    return this.ledger.recordTransaction(
+      transferId,
+      TRANSACTION_TYPES.TRANSFER,
+      transferEntries
+    );
   }
 }
 
