@@ -308,9 +308,7 @@ app.post("/webhooks/flutterwave", async (req, res) => {
   res.status(200).json({ received: true });
 
   // 2. verifier la signature
-  console.log("WEBHOOK BODY:", JSON.stringify(req.body));
   const signature = req.headers["verif-hash"];
-  console.log("WEBHOOK HEADERS:", req.headers["verif-hash"]);
   const webhookSecret = process.env.FLUTTERWAVE_WEBHOOK_SECRET;
 
   if (!signature || signature !== webhookSecret) {
@@ -319,7 +317,7 @@ app.post("/webhooks/flutterwave", async (req, res) => {
   }
 
   // 3.idempotency
-  const transactionId = req.body?.data?.id;
+  const transactionId = req.body?.id;
   if (!transactionId || processedTransactions.has(String(transactionId))) {
     console.log("Already processed:", transactionId);
 
@@ -327,16 +325,15 @@ app.post("/webhooks/flutterwave", async (req, res) => {
   }
 
   // 4.Traiter seuelement si paiement reussi
-  if (req.body?.event !== "charge.completed") return;
-  if (req.body?.data?.status !== "successful") return;
+  if (req.body?.status !== "successful") return;
 
   processedTransactions.add(String(transactionId));
 
   try {
     // 5. Trouver l'utilisateur par email
-    const txRef = req.body?.data?.tx_ref;
+    const txRef = req.body?.txRef;
     const username = txRef?.split("-")[1];
-    const amount = req.body?.data?.amount;
+    const amount = req.body?.amount;
 
     const user = await User.findOne({ username });
     if (!user) {
@@ -346,7 +343,6 @@ app.post("/webhooks/flutterwave", async (req, res) => {
 
     // 6. Créditer le compte
     await transactionBuilder.deposit(user.username, user.accountId, amount);
-    console.log(`✅ Credited ${amount} to ${user.username}`);
   } catch (err) {
     console.log("Webhook error:", err.message);
   }
