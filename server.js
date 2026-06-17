@@ -335,12 +335,12 @@ app.post("/webhooks/flutterwave", async (req, res) => {
   try {
     // 5. Trouver l'utilisateur par email
     const txRef = req.body?.data?.tx_ref;
-    const username = txRef.split("-")[1];
-    const user = await User.findOne({ username });
+    const username = txRef?.split("-")[1];
+    const amount = req.body?.data?.amount;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ username });
     if (!user) {
-      console.log("User not found for email:", email);
+      console.log("user not found for username", username);
       return;
     }
 
