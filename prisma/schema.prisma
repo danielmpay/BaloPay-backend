@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url     = env("DATABASE_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ledger_entries {
+  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  transaction_id String       @db.Uuid
+  user_id        String       @db.Uuid
+  amount         Decimal      @db.Decimal(15, 4)
+  direction      String       @db.VarChar(6)
+  created_at     DateTime?    @default(now()) @db.Timestamptz(6)
+  transactions   transactions @relation(fields: [transaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model transactions {
+  id                                    String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  sender_id                             String              @db.Uuid
+  receiver_id                           String              @db.Uuid
+  status                                transaction_status?
+  amount                                Decimal             @db.Decimal(19, 4)
+  created_at                            DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at                            DateTime?           @default(now()) @db.Timestamptz(6)
+  ledger_entries                        ledger_entries[]
+  users_transactions_receiver_idTousers users               @relation("transactions_receiver_idTousers", fields: [receiver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_transactions_sender_idTousers   users               @relation("transactions_sender_idTousers", fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([receiver_id], map: "idx_transactions_receiver_id")
+  @@index([sender_id], map: "idx_transactions_sender_id")
+  @@index([status], map: "idx_transactions_status")
+}
+
+model transactions_audit {
+  id             String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  transaction_id String              @db.Uuid
+  old_status     transaction_status?
+  new_status     transaction_status?
+  changed_at     DateTime?           @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                                           String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  username                                     String           @db.VarChar(50)
+  email                                        String           @unique @db.VarChar(50)
+  password                                     String           @db.VarChar(255)
+  kyc_verified                                 Boolean?         @default(false)
+  is_active                                    Boolean?         @default(false)
+  created_at                                   DateTime?        @db.Timestamptz(6)
+  balance                                      Decimal?         @default(0) @db.Decimal(19, 4)
+  ledger_entries                               ledger_entries[]
+  transactions_transactions_receiver_idTousers transactions[]   @relation("transactions_receiver_idTousers")
+  transactions_transactions_sender_idTousers   transactions[]   @relation("transactions_sender_idTousers")
+  wallets                                      wallets?
+}
+
+model wallets {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String    @unique @db.Uuid
+  balance    Decimal?  @db.Decimal(15, 4)
+  currency   String?   @db.VarChar(50)
+  created_at DateTime? @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum transaction_status {
+  pending
+  completed
+  failed
+}

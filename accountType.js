@@ -1,0 +1,8 @@
+const ACCOUNT_TYPES = {
+  USER: "USER",
+  BANK: "BANK",
+  FEES: "FEES",
+  SETTLEMENT: "SETTLEMENT"
+};
+
+module.exports = ACCOUNT_TYPES;
