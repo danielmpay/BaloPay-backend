@@ -104,7 +104,8 @@ app.post("/register", async (req, res) => {
     res.json({
       message: "User created",
       token,
-      accountId: user.accountId
+      accountId: user.accountId,
+      username: user.username
     });
   } catch (e) {
     res.status(400).json({ error: e.message });
@@ -156,7 +157,8 @@ app.post("/login", loginLimiter, async (req, res) => {
     res.json({
       message: "Login Successful",
       token,
-      accountId: existingUser.accountId
+      accountId: existingUser.accountId,
+      username: existingUser.username
     });
   } catch (err) {
     res.status(500).send("Server Error");
